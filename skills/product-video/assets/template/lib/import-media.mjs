@@ -11,7 +11,7 @@
  * log/media/sheet.jpg (a numbered contact sheet to look through before scripting).
  */
 import { execFileSync } from "node:child_process";
-import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 import { PROJECT_DIR } from "./profile.mjs";
@@ -70,11 +70,31 @@ function probe(file) {
   return { width: stream.width, height: stream.height, duration: Number.isFinite(duration) ? Math.round(duration * 100) / 100 : null };
 }
 
+/** macOS converts and resizes images with its own `sips`; elsewhere ffmpeg does it. */
+const HAS_SIPS = process.platform === "darwin";
+
+function convertToPng(source, target) {
+  if (HAS_SIPS) execFileSync("sips", ["-s", "format", "png", source, "--out", target], { stdio: "ignore" });
+  else execFileSync("ffmpeg", ["-v", "error", "-y", "-i", source, "-frames:v", "1", target]);
+}
+
+/** Scales an image down in place so its long side is at most `maxSide`. */
+function capLongSide(file, maxSide) {
+  if (HAS_SIPS) {
+    execFileSync("sips", ["-Z", String(maxSide), file], { stdio: "ignore" });
+    return;
+  }
+  const resized = `${file}.resized${extensionOf(file)}`;
+  execFileSync("ffmpeg", ["-v", "error", "-y", "-i", file, "-frames:v", "1",
+    "-vf", `scale=${maxSide}:${maxSide}:force_original_aspect_ratio=decrease`, resized]);
+  renameSync(resized, file);
+}
+
 function importImage(source, target) {
   if (READY_IMAGES.has(extensionOf(source))) copyFileSync(source, target);
-  else execFileSync("sips", ["-s", "format", "png", source, "--out", target], { stdio: "ignore" });
+  else convertToPng(source, target);
   const { width, height } = probe(target);
-  if (Math.max(width, height) > MAX_IMAGE_SIDE) execFileSync("sips", ["-Z", String(MAX_IMAGE_SIDE), target], { stdio: "ignore" });
+  if (Math.max(width, height) > MAX_IMAGE_SIDE) capLongSide(target, MAX_IMAGE_SIDE);
 }
 
 function importVideo(source, target) {

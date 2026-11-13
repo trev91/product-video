@@ -25,7 +25,7 @@ node_ok() { command -v node >/dev/null 2>&1 && [ "$(node -p 'Number(process.vers
 # A tool built for the other processor only runs where Rosetta happens to be installed, so it does not count.
 # Rosetta is macOS only; on Linux a binary for the wrong processor simply fails the encoder check below.
 native() { [ "$OS" != Darwin ] || file -L "$(command -v "$1")" 2>/dev/null | grep -q "$(uname -m)"; }
-ffmpeg_ok() { command -v ffmpeg >/dev/null 2>&1 && command -v ffprobe >/dev/null 2>&1 && native ffmpeg && native ffprobe && ffmpeg -hide_banner -encoders 2>/dev/null | grep -q libx264; }
+ffmpeg_ok() { command -v ffmpeg >/dev/null 2>&1 && command -v ffprobe >/dev/null 2>&1 && native ffmpeg && native ffprobe && ffmpeg -hide_banner -encoders 2>/dev/null | grep libx264 >/dev/null; }
 # Linux: the path Playwright's "chrome" channel launches.
 chrome_ok() { [ -d "/Applications/Google Chrome.app" ] || [ -d "$HOME/Applications/Google Chrome.app" ] || [ -x /opt/google/chrome/chrome ]; }
 sha256_of() { if command -v shasum >/dev/null 2>&1; then shasum -a 256 "$1"; else sha256sum "$1"; fi | cut -d' ' -f1; }

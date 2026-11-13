@@ -73,6 +73,10 @@ Start a new session afterwards so the plugin loads. To update later:
 macOS. Ask Claude to "set up video making" (or run `/product-video:setup`): it checks the Mac and, with
 your OK, installs what is missing into a folder in your home directory, with no administrator password.
 
+Linux (tried on Debian 13, x86-64) works for web videos: the profile draft, the web recorder and the
+hype-cut render. Mobile capture and the `system` voice (macOS `say`) do not; use
+`narration.mode` `command`, `recorded` or `silent` there.
+
 - Node 20 or newer and ffmpeg with libx264 (installed for you if missing). Google Chrome is used when
   present; otherwise a private Chromium is downloaded.
 - For mobile capture: macOS with Xcode's iOS Simulator and Maestro. Web-only use needs neither.

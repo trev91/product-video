@@ -68,8 +68,14 @@ export interface Shot {
   id: string;
   scene: number;
   kind: ShotKind;
-  /** Path under public/, e.g. raw/web/shot-01-3.mp4. */
+  /** Path under public/, e.g. raw/web/shot-01-3.mp4 or raw/media/03-pricing.png. */
   src: string | null;
+  /** What `src` is: a clip that plays, or a still image held for the whole shot. */
+  media: "video" | "image";
+  /** "cover" fills the frame (recordings); "contain" shows the whole source with dark bars (supplied media). */
+  fit: "cover" | "contain";
+  /** How far a still image scales up over the shot (0.04 = 4%); 0 for clips. */
+  drift: number;
   /** Source width and height in pixels (for zoom and callout math). */
   srcWidth: number;
   srcHeight: number;

@@ -41,6 +41,9 @@ of each pattern and renders before anything is recorded.
   (entries in `harness/shots-hype.mjs`). A still with a `Camera` push looks sharper than recorded
   video; use the screencast only where motion matters, such as text being typed.
 
+- Supplied screenshots and videos (`node lib/import-media.mjs`, files in `raw/media/`) go straight
+  into `Still` and `Clip`. Nothing covers private details here: use only media that is clean.
+
 ## Review and render
 
 - `node edit/stills.mjs Hype <outDir> <frame>...` bundles once and renders half-scale frames; tile

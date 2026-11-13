@@ -5,8 +5,9 @@
  *  - vo/<prefix>durations.json seconds per shot's voice file (written by the VO generators)
  *  - captions/<name>.srt       optional hand-written cues (lines.json "captions" index them);
  *                              without it, cues are chunked from each shot's text
- *  - edit/shots.json           per-shot clip: src, trimStart, speed, extraHold, segments,
- *                              zooms/callouts/taps (marker-based), patches
+ *  - edit/shots.json           per-shot media: src (a recorded clip, or a supplied clip or image
+ *                              under raw/media/), trimStart, speed, extraHold, segments,
+ *                              zooms/callouts/taps (marker-based), patches, fit, drift
  *
  * Voice sets the timing: each shot lasts voLead + voice + shotTail (+ sceneTail on the
  * last shot of a scene); scene changes cross-dissolve over 10 frames.
@@ -71,6 +72,8 @@ function chunkCaptions(text, maxLine = 32) {
   return cues;
 }
 
+const isImage = (src) => /\.(png|jpe?g|webp)$/i.test(src);
+
 function probe(src) {
   const out = execFileSync("ffprobe", [
     "-v", "error", "-select_streams", "v:0",
@@ -89,6 +92,7 @@ function probe(src) {
  */
 function loadMarkers(cfg) {
   if (!cfg.src) return [];
+  if (!cfg.src.endsWith(".mp4")) return [];
   const sidecar = `${ROOT}${cfg.src.replace(/\.mp4$/, ".json")}`;
   if (!existsSync(sidecar)) return [];
   return JSON.parse(readFileSync(sidecar, "utf8")).markers ?? [];
@@ -169,8 +173,8 @@ for (const line of lines) {
       srcHeight = info.height;
       const last = segments.at(-1);
       const lastEnd = last.trimStart + last.duration * last.speed;
-      if (info.duration < lastEnd) {
-        console.warn(`WARN ${line.shot}: clip ${src} is ${info.duration.toFixed(1)}s, last piece needs ${lastEnd.toFixed(1)}s`);
+      if (!isImage(src) && info.duration < lastEnd) {
+        console.warn(`WARN ${line.shot}: clip ${src} is ${info.duration.toFixed(1)}s, last piece needs ${lastEnd.toFixed(1)}s (it holds its last frame; lower "speed" or shorten the line)`);
       }
     }
   } else if (kind !== "title" && kind !== "end") {
@@ -200,6 +204,9 @@ for (const line of lines) {
     scene: line.scene,
     kind,
     src,
+    media: src && isImage(src) ? "image" : "video",
+    fit: cfg.fit ?? (src?.startsWith("raw/media/") ? "contain" : "cover"),
+    drift: src && isImage(src) ? (cfg.drift ?? 0.04) : 0,
     srcWidth,
     srcHeight,
     trimStart,

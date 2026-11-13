@@ -2,20 +2,25 @@
 # Create a video project from the template, with a profile that is either supplied or drafted.
 #   new-project.sh <project-dir> <video-name> <profile.json>
 #   new-project.sh <project-dir> <video-name> --from-urls <brand-url> <app-url>
+#   new-project.sh <project-dir> <video-name> --from-media <brand-url>
 #   e.g. new-project.sh ./videos/onboarding-tour onboarding-tour ./video-profile.json
 #        new-project.sh ./videos/launch launch-hype --from-urls https://example.com https://app.example.com
 # A supplied profile is copied into the project (with its logo and fonts), validated and applied.
 # --from-urls drafts the profile: brand from the first URL, the app to record from the second,
-# with read-only mode on. Confirm the draft (log/profile-draft.md) with the person before recording.
+# with read-only mode on. --from-media drafts a profile with the brand only, for a video made
+# from supplied screenshots and videos (lib/import-media.mjs) with no app recorded.
+# Confirm the draft (log/profile-draft.md) with the person before recording or editing.
 set -euo pipefail
 [ -f "${PRODUCT_VIDEO_HOME:-$HOME/.product-video}/env.sh" ] && source "${PRODUCT_VIDEO_HOME:-$HOME/.product-video}/env.sh"
 SKILL="$(cd "$(dirname "$0")/.." && pwd)"
 DIR="${1:?project directory}"
 NAME="${2:?video name, e.g. onboarding-tour}"
-PROFILE="${3:?a profile.json path, or --from-urls <brand-url> <app-url>}"
+PROFILE="${3:?a profile.json path, --from-urls <brand-url> <app-url>, or --from-media <brand-url>}"
 BRAND_URL=""; APP_URL=""
 if [ "$PROFILE" = "--from-urls" ]; then
   BRAND_URL="${4:?brand URL}"; APP_URL="${5:?app URL}"; PROFILE=""
+elif [ "$PROFILE" = "--from-media" ]; then
+  BRAND_URL="${4:?brand URL}"; APP_URL="--media"; PROFILE=""
 else
   [ -f "$PROFILE" ] || { echo "profile not found: $PROFILE" >&2; exit 1; }
 fi
@@ -23,7 +28,7 @@ fi
 case "$DIR" in *" "*) echo "the project path must not contain spaces: $DIR" >&2; exit 1 ;; esac
 command -v node >/dev/null 2>&1 || { echo "Node.js is missing: run scripts/setup.sh install first" >&2; exit 1; }
 
-mkdir -p "$DIR"/{raw/web,raw/mobile,raw/cuts,music,gfx,log,captions,auth}
+mkdir -p "$DIR"/{raw/web,raw/mobile,raw/cuts,raw/media,music,gfx,log,captions,auth}
 cp -R "$SKILL/assets/template/." "$DIR/"
 rm "$DIR/profile.example.json"
 DIR="$(cd "$DIR" && pwd)"
@@ -62,7 +67,7 @@ fi
 (cd "$DIR/edit" && mkdir -p public && cd public && for d in raw vo music gfx; do ln -sfn "../../$d" "$d"; done)
 if [ -n "$BRAND_URL" ]; then
   (cd "$DIR" && node lib/draft-profile.mjs "$BRAND_URL" "$APP_URL" > /dev/null)
-  echo "profile drafted from $BRAND_URL and $APP_URL: read $DIR/log/profile-draft.md and confirm it with the person"
+  echo "profile drafted from $BRAND_URL: read $DIR/log/profile-draft.md and confirm it with the person"
 fi
 (cd "$DIR" && node lib/apply-profile.mjs)
 

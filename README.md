@@ -44,6 +44,9 @@ your OK, installs what is missing into a folder in your home directory, with no 
    Or write the profile yourself from `skills/product-video/assets/template/profile.example.json`.
    The `environment` and `safety` sections decide where recording is allowed and what must never
    happen; check them carefully.
+   No access to the app, or you already have screenshots or screen recordings? Give Claude your
+   website and the files instead. It builds the video from them and records nothing. You can mix
+   all three in one video: recorded shots, screenshots and uploaded videos.
 2. Ask for a video: "make a 60 second hype video of the new dashboard" or "make a narrated tour of
    onboarding".
 
@@ -57,7 +60,7 @@ your OK, installs what is missing into a folder in your home directory, with no 
 
 ## Status
 
-Version 0.1.0: the engine, the profile schema, and a start from two URLs. The template renders and the web recorder runs
+Version 0.2.0: the engine, the profile schema, a start from two URLs, and videos made from supplied screenshots and videos. The template renders and the web recorder runs
 end to end against a test page. It has not yet been run on a second organization's product, the
 mobile scripts are untested outside the product they came from, and mobile capture is iOS Simulator only.
 

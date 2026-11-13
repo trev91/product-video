@@ -1,4 +1,4 @@
-import { AbsoluteFill, Easing, OffthreadVideo, Series, interpolate, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
+import { AbsoluteFill, Easing, Img, OffthreadVideo, Series, interpolate, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
 
 import { ACCENT, DARK } from "../brand";
 import type { Callout, Patch, Shot, Tap, Zoom } from "../edl";
@@ -113,7 +113,21 @@ const PatchBox: React.FC<{ patch: Patch; t: number; srcWidth: number; srcHeight:
   );
 };
 
-/** One recorded shot: the clip (full frame for web shots, in a phone frame on the dark backdrop for mobile shots), with zooms, callouts and taps. */
+const FRAME = { width: 1920, height: 1080 };
+
+/** The largest box of the source's shape that fits the frame, centred ("contain"); the whole frame for "cover". */
+function stageBox(shot: Shot): { left: number; top: number; width: number; height: number } {
+  if (shot.fit === "cover") return { left: 0, top: 0, ...FRAME };
+  const scale = Math.min(FRAME.width / shot.srcWidth, FRAME.height / shot.srcHeight);
+  const width = Math.round(shot.srcWidth * scale);
+  const height = Math.round(shot.srcHeight * scale);
+  return { left: (FRAME.width - width) / 2, top: (FRAME.height - height) / 2, width, height };
+}
+
+/**
+ * One shot: a recorded or supplied clip, or a supplied image (full frame for web shots, in a
+ * phone frame on the dark backdrop for mobile shots), with zooms, callouts, taps and patches.
+ */
 export const ShotView: React.FC<{ shot: Shot }> = ({ shot }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -121,7 +135,8 @@ export const ShotView: React.FC<{ shot: Shot }> = ({ shot }) => {
   const zoom = zoomState(shot.zooms, t);
 
   const phoneWidth = Math.round((820 * shot.srcWidth) / shot.srcHeight);
-  const overlayScale = shot.kind === "mobile" ? phoneWidth / shot.srcWidth : 1920 / shot.srcWidth;
+  const box = stageBox(shot);
+  const overlayScale = (shot.kind === "mobile" ? phoneWidth : box.width) / shot.srcWidth;
   const overlays = (
     <>
       {shot.patches.map((p, i) => (
@@ -143,8 +158,11 @@ export const ShotView: React.FC<{ shot: Shot }> = ({ shot }) => {
       }
     : {};
 
-  const video =
-    shot.src === null ? null : (
+  const fill: React.CSSProperties = { width: "100%", height: "100%", objectFit: "cover" };
+  const clip =
+    shot.src === null ? null : shot.media === "image" ? (
+      <Img src={staticFile(shot.src)} style={fill} />
+    ) : (
       <Series>
         {shot.segments.map((segment, i) => (
           <Series.Sequence key={i} durationInFrames={Math.max(1, Math.round(segment.duration * fps))}>
@@ -153,12 +171,20 @@ export const ShotView: React.FC<{ shot: Shot }> = ({ shot }) => {
               startFrom={Math.round(segment.trimStart * fps)}
               playbackRate={segment.speed}
               muted
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              style={fill}
             />
           </Series.Sequence>
         ))}
       </Series>
     );
+  // A still image drifts slowly toward the viewer so it never sits frozen; overlays move with it.
+  const drift = 1 + shot.drift * Math.min(1, t / shot.duration);
+  const content = (
+    <AbsoluteFill style={{ transform: `scale(${drift})` }}>
+      {clip}
+      {overlays}
+    </AbsoluteFill>
+  );
 
   if (shot.kind === "mobile") {
     const height = 820;
@@ -179,8 +205,7 @@ export const ShotView: React.FC<{ shot: Shot }> = ({ shot }) => {
             ...zoomStyle,
           }}
         >
-          {video}
-          {overlays}
+          {content}
         </div>
       </AbsoluteFill>
     );
@@ -188,10 +213,7 @@ export const ShotView: React.FC<{ shot: Shot }> = ({ shot }) => {
 
   return (
     <AbsoluteFill style={{ backgroundColor: DARK }}>
-      <AbsoluteFill style={zoomStyle}>
-        {video}
-        {overlays}
-      </AbsoluteFill>
+      <div style={{ position: "absolute", ...box, overflow: "hidden", ...zoomStyle }}>{content}</div>
     </AbsoluteFill>
   );
 };

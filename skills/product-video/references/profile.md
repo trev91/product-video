@@ -21,6 +21,10 @@ project, `node lib/draft-profile.mjs <brand-url> <app-url>`) writes `profile.jso
   login, `web.auth` becomes `storageState` and the person signs in with `node harness/sign-in.mjs`.
 - **Environment** is `live` with `safety.readOnly: true` (or `local` for a localhost address).
 
+With no app to record, `--from-media <brand-url>` (or `node lib/draft-profile.mjs <brand-url>
+--media`) drafts the brand only: `environment.kind` is `supplied-media`, there is no `web` or
+`mobile` section, and the recorders cannot open anything.
+
 Go through `log/profile-draft.md` with the person: show them the logo file and the colours, read out
 the notes, and ask its four "confirm before recording" questions. Common misses: a light logo meant
 for a dark header, a display font used only in images, an accent that is really a secondary colour,
@@ -46,7 +50,8 @@ Ask in this order; the first two sections are the ones that cannot be guessed.
    readable in the video?" (`mask`). For each `neverDo` item that is a web request, add a
    `blockRequests` rule so the recorder aborts it even if a script slips.
 3. **Apps** - `web` (base URL, how to sign in) and/or `mobile` (bundle id, simulator, screen size).
-   At least one is required.
+   At least one is required, unless `environment.kind` is `supplied-media` (nothing is recorded;
+   `allowedHosts` is then an empty list).
 4. **Brand** - three colours, two Google Fonts family names, and a logo file if there is one.
 5. **Narration, music, delivery, decisions** - whatever is already settled. Add to `decisions`
    every time the person makes a call that should hold for future videos.

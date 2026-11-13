@@ -1,6 +1,6 @@
 # Pipeline reference
 
-Contents: project layout · data files · web recording · mobile recording · voice · timing tools ·
+Contents: project layout · data files · supplied media · web recording · mobile recording · voice · timing tools ·
 render · gotchas.
 
 ## Project layout (created by `scripts/new-project.sh <dir> <name> <profile.json>`)
@@ -19,6 +19,7 @@ render · gotchas.
   raw/web/       shot-<id>-take<n>.webm/.mp4 + .json marker sidecars, still-<id>.png, hq-<id>.mp4
   raw/mobile/    shot-<id>-take<n>.mp4
   raw/cuts/      clips baked for the hype cut
+  raw/media/     supplied screenshots and videos (<nn>-<name>.png/.jpg/.mp4) + index.json
   gfx/ music/    logo, optional music file
   export/        make-deliverables.sh, render-hype.sh, qc.sh, contact-sheet.sh, the MP4s
   log/           recording-log.txt, probe output, contact sheets
@@ -46,6 +47,10 @@ without an SRT the builder chunks the text into 32-character, two-line cues.
                  "text": "(555) 012-3456", "fontSize": 36, "color": "#7F7C71" }] }
 ```
 - `kind`: `web` (full frame) or `mobile` (framed on the dark backdrop). The card shots are named in video.json.
+- `src` may be a clip or an image (`.png`, `.jpg`, `.webp`). An image is held for the whole shot
+  and scales up by `drift` (default 0.04; 0 for none). `fit` is `cover` (fill the frame, the
+  default for recordings) or `contain` (show all of it between dark bars, the default for
+  anything under `raw/media/`).
 - Duration = 0.35 + voice + shotTail (+ sceneTail at a scene end) + `extraHold`. The clip must
   cover it; the builder warns `last piece needs ...s` when it does not.
 - `segments`: jump cuts. Every piece but the last gives `sourceDuration`; the last fills the shot.
@@ -54,6 +59,32 @@ without an SRT the builder chunks the text into 32-character, two-line cues.
   Pixels are source coordinates.
 - `patches`: covers drawn with the clip, under zooms; `from` and `to` in shot seconds, or
   `fromSegment` to start exactly at a jump cut. Use them for anything in `safety.mask`.
+
+## Supplied media
+
+`node lib/import-media.mjs <file-or-folder> [...]` brings in the person's own screenshots and
+videos; run it again to add more. Originals are never changed.
+
+- Images: png, jpg and webp are copied; heic, tiff, bmp and gif become png. Videos (mp4, mov, m4v,
+  webm, mkv, avi) become silent, constant 30 fps H.264, at most 1920 px on the long side. Any
+  sound in a supplied video is dropped: the narration or the music replaces it.
+- `raw/media/index.json` lists each item: `file`, `original`, `type`, `width`, `height`,
+  `duration` (videos) and a suggested `kind` (`mobile` for portrait, else `web`).
+  `log/media/sheet.jpg` shows them in the same order, four to a row.
+- Narrated cut: `"03-1": { "kind": "web", "src": "raw/media/03-pricing.png" }`. Zooms, callouts,
+  taps and patches work on images and supplied clips with plain `at` times and source pixels
+  (there are no recording markers). Find pixel positions by reading the image at full size.
+- A supplied clip shorter than its line holds its last frame; slow it with `speed` below 1, use
+  `trimStart` to skip a slow start, or split the line across two shots.
+- Hype cut: use the files directly, `<Still src="raw/media/03-pricing.png" />` and
+  `<Clip src="raw/media/05-demo.mp4" />`, inside `Browser` or `Phone`.
+- Making stills feel alive: one zoom toward the thing the line names, a callout on it, and a
+  second screenshot of the next state as its own shot. Do not fake a cursor or typing.
+- Screenshots with a browser's address bar, bookmarks or desktop around them: ask for a clean
+  one, or crop with `sips -c <height> <width> --cropOffset <y> <x> <file>` before importing.
+- A project made with `--from-media` has `environment.kind: "supplied-media"` and no `web` or
+  `mobile` section, so the recorders refuse to run. To record as well, add the app to the profile
+  the usual way (environment, allowed hosts, safety).
 
 ## Web recording
 

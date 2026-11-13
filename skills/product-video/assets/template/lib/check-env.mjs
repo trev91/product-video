@@ -8,7 +8,7 @@ import { loadProfile } from "./profile.mjs";
 const profile = loadProfile();
 const { environment } = profile;
 console.log(`environment: ${environment.kind} - ${environment.description}`);
-console.log(`allowed hosts: ${environment.allowedHosts.join(", ")}`);
+console.log(`allowed hosts: ${environment.allowedHosts.join(", ") || "none (nothing can be recorded; media is supplied)"}`);
 if (environment.forbiddenHosts?.length) console.log(`forbidden hosts: ${environment.forbiddenHosts.join(", ")}`);
 console.log(`read-only mode: ${profile.safety.readOnly ? "ON (writes are aborted after sign-in)" : "off"}`);
 

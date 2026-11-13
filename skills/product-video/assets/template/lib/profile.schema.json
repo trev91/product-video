@@ -1,0 +1,355 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/product-video/profile.schema.json",
+  "title": "Product video organization profile",
+  "description": "Everything the product-video engine needs to know about one organization: brand, the apps to record, the environment where recording is safe, and the creative decisions that are already settled. Secrets never go in this file; name the environment variables that hold them.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "organization", "product", "brand", "environment", "safety"],
+  "anyOf": [{"required": ["web"]}, {"required": ["mobile"]}],
+  "properties": {
+    "$schema": {"type": "string"},
+    "schemaVersion": {"const": 1},
+    "organization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {"name": {"type": "string", "minLength": 1}}
+    },
+    "product": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "tagline": {"type": "string", "description": "One line for the end card of a hype cut."},
+        "windowTitle": {"type": "string", "description": "Text in the browser frame's title pill. Defaults to the product name."}
+      }
+    },
+    "brand": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["colors", "fonts"],
+      "properties": {
+        "colors": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["accent", "dark", "light"],
+          "properties": {
+            "accent": {"$ref": "#/$defs/hexColor", "description": "Highlights: cursor ring, callouts, accent words, glow."},
+            "dark": {"$ref": "#/$defs/hexColor", "description": "Dark text and the backdrop behind framed phone shots."},
+            "light": {"$ref": "#/$defs/hexColor", "description": "Card backgrounds and light text."},
+            "stage": {"$ref": "#/$defs/hexColor", "description": "Near-black stage of the hype cut. Defaults to #060706."}
+          }
+        },
+        "fonts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["heading", "body"],
+          "properties": {
+            "heading": {
+              "type": "string",
+              "description": "Font family name. A Google Fonts family (e.g. \"Montserrat\") loads by name; any other needs files in fontFiles."
+            },
+            "body": {"type": "string", "description": "Font family name, as for heading."}
+          }
+        },
+        "logo": {
+          "type": "string",
+          "description": "Image path relative to this file (PNG or SVG on a transparent background). Without one, cards show the product name as text."
+        },
+        "fontFiles": {
+          "type": "array",
+          "description": "Font files for families that are not on Google Fonts. The organization must hold the licence to use them in video.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["family", "path", "weight"],
+            "properties": {
+              "family": {"type": "string"},
+              "path": {"type": "string", "description": "woff2, woff, ttf or otf, relative to this file."},
+              "weight": {"type": "string", "description": "CSS weight, e.g. \"700\"."}
+            }
+          }
+        }
+      }
+    },
+    "web": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["baseUrl", "auth"],
+      "properties": {
+        "baseUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "Where the web app is recorded. Its host must be listed in environment.allowedHosts."
+        },
+        "viewport": {"$ref": "#/$defs/size", "description": "Recording viewport for narrated shots. Default 1920x1080."},
+        "stillViewport": {
+          "$ref": "#/$defs/size",
+          "description": "Viewport for 2x stills and screencasts in the hype cut. Default 1440x900."
+        },
+        "colorScheme": {"enum": ["light", "dark"], "default": "light"},
+        "hideCss": {
+          "type": "string",
+          "description": "CSS injected into every page to hide dev overlays, chat widgets or banners."
+        },
+        "probePaths": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Paths the probe visits to save a screenshot and an accessibility snapshot of each page."
+        },
+        "auth": {
+          "description": "How the recorder signs in. Credentials are read from the named environment variables at run time.",
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["type"],
+              "properties": {"type": {"const": "none"}}
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["type", "path"],
+              "properties": {
+                "type": {"const": "storageState"},
+                "path": {
+                  "type": "string",
+                  "description": "A Playwright storage-state file a person created by signing in once. Keep it out of version control."
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["type", "url", "body"],
+              "properties": {
+                "type": {"const": "request"},
+                "url": {"type": "string", "description": "Login endpoint, absolute or relative to baseUrl."},
+                "body": {
+                  "type": "object",
+                  "description": "JSON body. A value of the form \"env:NAME\" is replaced with that environment variable.",
+                  "additionalProperties": {"type": "string"}
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["type", "path", "fields", "submit"],
+              "properties": {
+                "type": {"const": "form"},
+                "path": {"type": "string", "description": "Login page path."},
+                "fields": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["label", "env"],
+                    "properties": {
+                      "label": {"type": "string", "description": "Accessible label of the input."},
+                      "env": {"type": "string", "description": "Environment variable holding the value."}
+                    }
+                  }
+                },
+                "submit": {"type": "string", "description": "Accessible name of the submit button."},
+                "waitFor": {"type": "string", "description": "Path the app lands on after signing in."}
+              }
+            }
+          ]
+        }
+      }
+    },
+    "mobile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["platform", "appId", "device", "screen"],
+      "properties": {
+        "platform": {"const": "ios", "description": "iOS Simulator only for now."},
+        "appId": {"type": "string", "description": "Bundle identifier of the build installed on the simulator."},
+        "device": {"type": "string", "description": "Simulator name or UDID."},
+        "screen": {"$ref": "#/$defs/size", "description": "Pixel size of the simulator's screen recording, e.g. 1206x2622."},
+        "statusBarTime": {"type": "string", "default": "9:41"},
+        "readyWhen": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "What the signed-in start screen shows; every shot waits for it after relaunch. Give an id or a text.",
+          "properties": {"id": {"type": "string"}, "text": {"type": "string"}}
+        },
+        "signIn": {
+          "type": "string",
+          "description": "How the test account gets signed in: a flow file path or a sentence for the operator."
+        },
+        "cleanupFlows": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Maestro flows that must run at the end of every session to remove anything a recording created."
+        }
+      }
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "description", "allowedHosts"],
+      "description": "The one place recording is allowed. The recorder refuses to start anywhere else.",
+      "properties": {
+        "kind": {
+          "enum": ["mock", "local", "staging", "demo-account", "live"],
+          "description": "\"live\" is a real account on the real app: it is only accepted together with safety.readOnly."
+        },
+        "description": {
+          "type": "string",
+          "description": "What makes this environment safe: whose data it holds and how it is reset."
+        },
+        "allowedHosts": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string"},
+          "description": "Hosts (with port) the recorder may open, e.g. localhost:3000."
+        },
+        "forbiddenHosts": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Production hosts. Any request to one is aborted."
+        },
+        "services": {
+          "type": "array",
+          "description": "Local processes to start before recording.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "command"],
+            "properties": {
+              "name": {"type": "string"},
+              "command": {"type": "string"},
+              "cwd": {"type": "string"},
+              "readyUrl": {"type": "string", "description": "Answers 2xx or 3xx once the service is up."}
+            }
+          }
+        }
+      }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["neverDo", "mask"],
+      "properties": {
+        "neverDo": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Actions that must never happen while recording, in plain words: \"send a message\", \"confirm a payment\"."
+        },
+        "mask": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "What must never be readable on screen: \"customer names\", \"email addresses\"."
+        },
+        "blockRequests": {
+          "type": "array",
+          "description": "Network backstop for the web recorder: matching requests are aborted.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["url"],
+            "properties": {
+              "method": {"enum": ["GET", "POST", "PUT", "PATCH", "DELETE"]},
+              "url": {"type": "string", "description": "Glob, e.g. **/api/messages/send"}
+            }
+          }
+        },
+        "readOnly": {
+          "type": "boolean",
+          "default": false,
+          "description": "Abort every request that is not a read (anything but GET, HEAD or OPTIONS) once the recorder has signed in. Required when environment.kind is \"live\". WebSocket messages are not covered."
+        },
+        "readOnlyAllow": {
+          "type": "array",
+          "description": "Requests read-only mode lets through because the app uses them to read data, e.g. a GraphQL query endpoint. Add one only after checking it cannot change anything.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["url"],
+            "properties": {
+              "method": {"enum": ["POST", "PUT", "PATCH", "DELETE"]},
+              "url": {"type": "string", "description": "Glob, e.g. **/api/search"}
+            }
+          }
+        }
+      }
+    },
+    "narration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode"],
+      "properties": {
+        "mode": {
+          "enum": ["silent", "system", "command", "recorded"],
+          "description": "silent: no voice. system: the operating system's voice, for timing or as final. command: your own text-to-speech command. recorded: a person supplies the files."
+        },
+        "voice": {"type": "string"},
+        "wordsPerMinute": {"type": "integer", "minimum": 80, "maximum": 220, "default": 150},
+        "command": {
+          "type": "string",
+          "description": "Shell command for mode \"command\". It reads the text from the file in $VO_TEXT_FILE and writes audio to $VO_OUT."
+        },
+        "pointOfView": {"type": "string", "description": "Who is speaking, e.g. \"third person; never the founder's own voice\"."},
+        "pronunciations": {
+          "type": "object",
+          "additionalProperties": {"type": "string"},
+          "description": "Spellings to speak differently: { \"FAQs\": \"F A Qs\" }."
+        }
+      }
+    },
+    "music": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode"],
+      "properties": {
+        "mode": {"enum": ["none", "added-later", "file"]},
+        "file": {"type": "string"},
+        "bpm": {
+          "type": "integer",
+          "minimum": 60,
+          "maximum": 200,
+          "default": 120,
+          "description": "Tempo the hype cut is edited on."
+        }
+      }
+    },
+    "delivery": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "maxSizeMb": {"type": "number"},
+        "loudnessLufs": {"type": "number", "default": -16},
+        "handoff": {
+          "type": "string",
+          "description": "Who receives the finished file and what must not happen to it, e.g. \"send to the requester only; never upload or post\"."
+        }
+      },
+      "description": "The edit is laid out for 1920x1080 at 30 fps; these settings cover the delivery file."
+    },
+    "decisions": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Creative and wording decisions that are already settled. The agent applies them without asking again."
+    }
+  },
+  "$defs": {
+    "hexColor": {"type": "string", "pattern": "^#[0-9A-Fa-f]{6}$"},
+    "size": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["width", "height"],
+      "properties": {"width": {"type": "integer", "minimum": 1}, "height": {"type": "integer", "minimum": 1}}
+    }
+  },
+  "if": {"properties": {"environment": {"properties": {"kind": {"const": "live"}}}}},
+  "then": {
+    "properties": {
+      "safety": {"required": ["readOnly"], "properties": {"readOnly": {"const": true}}}
+    }
+  }
+}

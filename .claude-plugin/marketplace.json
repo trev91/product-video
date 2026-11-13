@@ -1,0 +1,13 @@
+{
+  "name": "product-video",
+  "owner": {
+    "name": "Slate Applications"
+  },
+  "plugins": [
+    {
+      "name": "product-video",
+      "source": "./",
+      "description": "Narrated product tours and silent hype cuts from real screen captures, driven by one organization profile."
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+# Clips for the hype cut, baked by make-cuts.sh into raw/cuts/.
+# <name> <file>:<start>:<duration>:<speed> [more segments, joined in order]
+# <name>.png <file>:<time>
+# home.png raw/mobile/shot-home-take1.mp4:14
+# home raw/mobile/shot-home-take1.mp4:15.0:4.0:1.5 raw/mobile/shot-home-take1.mp4:22.0:3.0:1

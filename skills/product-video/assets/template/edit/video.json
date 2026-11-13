@@ -1,0 +1,28 @@
+{
+  "name": "product-tour",
+  "voPrefix": "vo-",
+  "shotTail": 0.7,
+  "sceneTail": 0.8,
+  "music": false,
+  "titleShot": "01-1",
+  "endShot": "02-1",
+  "titleCard": {
+    "heading": "Welcome",
+    "subline": "A quick tour"
+  },
+  "endCard": {
+    "heading": "Thanks for watching",
+    "subline": "",
+    "contactLine": ""
+  },
+  "scenes": {
+    "1": {
+      "title": "Welcome",
+      "subtitle": ""
+    },
+    "2": {
+      "title": "Thanks",
+      "subtitle": ""
+    }
+  }
+}

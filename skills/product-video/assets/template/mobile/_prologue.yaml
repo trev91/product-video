@@ -1,0 +1,22 @@
+# Every shot flow starts here: relaunch the app (already signed in) and wait for its start screen.
+# MAESTRO_READY_ID or MAESTRO_READY_TEXT comes from mobile.readyWhen in the profile (device.sh sets them).
+appId: ${MAESTRO_APP_ID}
+---
+- launchApp:
+    stopApp: true
+- runFlow:
+    when:
+      true: ${MAESTRO_READY_ID != ""}
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: ${MAESTRO_READY_ID}
+          timeout: 60000
+- runFlow:
+    when:
+      true: ${MAESTRO_READY_TEXT != ""}
+    commands:
+      - extendedWaitUntil:
+          visible: ${MAESTRO_READY_TEXT}
+          timeout: 60000
+- waitForAnimationToEnd

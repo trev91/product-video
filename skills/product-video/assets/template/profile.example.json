@@ -1,0 +1,102 @@
+{
+  "$schema": "./lib/profile.schema.json",
+  "schemaVersion": 1,
+  "organization": {
+    "name": "Example Co"
+  },
+  "product": {
+    "name": "Northwind",
+    "tagline": "Everything in one place.",
+    "windowTitle": "Northwind Admin"
+  },
+  "brand": {
+    "colors": {
+      "accent": "#3B82F6",
+      "dark": "#1F2937",
+      "light": "#FFFFFF"
+    },
+    "fonts": {
+      "heading": "Montserrat",
+      "body": "Inter"
+    }
+  },
+  "web": {
+    "baseUrl": "http://localhost:3000",
+    "probePaths": [
+      "/"
+    ],
+    "auth": {
+      "type": "request",
+      "url": "/api/auth/login",
+      "body": {
+        "email": "env:VIDEO_DEMO_EMAIL",
+        "password": "env:VIDEO_DEMO_PASSWORD"
+      }
+    }
+  },
+  "mobile": {
+    "platform": "ios",
+    "appId": "com.example.northwind",
+    "device": "iPhone 17 Pro",
+    "screen": {
+      "width": 1206,
+      "height": 2622
+    },
+    "readyWhen": {
+      "text": "Home"
+    },
+    "signIn": "Sign in once by hand with the demo account; the simulator keeps the session.",
+    "cleanupFlows": []
+  },
+  "environment": {
+    "kind": "local",
+    "description": "The web app running locally against seeded demo data. Every person in it is fictional; restart the seed to reset.",
+    "allowedHosts": [
+      "localhost:3000"
+    ],
+    "forbiddenHosts": [
+      "app.example.com",
+      "api.example.com"
+    ],
+    "services": [
+      {
+        "name": "web",
+        "command": "npm run dev",
+        "cwd": "../northwind-web",
+        "readyUrl": "http://localhost:3000/login"
+      }
+    ]
+  },
+  "safety": {
+    "neverDo": [
+      "send a message or notification",
+      "confirm a payment or order",
+      "delete a record"
+    ],
+    "mask": [
+      "real names",
+      "email addresses",
+      "phone numbers"
+    ],
+    "blockRequests": [
+      {
+        "method": "POST",
+        "url": "**/api/messages/send"
+      }
+    ]
+  },
+  "narration": {
+    "mode": "system",
+    "wordsPerMinute": 150,
+    "pointOfView": "third person"
+  },
+  "music": {
+    "mode": "none",
+    "bpm": 120
+  },
+  "delivery": {
+    "maxSizeMb": 25,
+    "handoff": "Send to the requester only. Never upload, post or commit the video."
+  },
+  "decisions": []
+}

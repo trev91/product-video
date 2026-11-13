@@ -1,0 +1,7 @@
+node_modules/
+auth/
+raw/
+export/*.mp4
+edit/public/
+edit/src/edl.json
+log/frames/

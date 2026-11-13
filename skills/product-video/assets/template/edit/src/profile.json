@@ -1,0 +1,28 @@
+{
+  "product": {
+    "name": "Northwind",
+    "tagline": "Everything in one place.",
+    "windowTitle": "Northwind Admin"
+  },
+  "colors": {
+    "accent": "#3B82F6",
+    "dark": "#1F2937",
+    "light": "#FFFFFF",
+    "stage": "#060706",
+    "accentRgb": "59,130,246"
+  },
+  "logo": null,
+  "bpm": 120,
+  "phoneScreen": {
+    "width": 1206,
+    "height": 2622
+  },
+  "webViewport": {
+    "width": 1920,
+    "height": 1080
+  },
+  "stillViewport": {
+    "width": 1440,
+    "height": 900
+  }
+}

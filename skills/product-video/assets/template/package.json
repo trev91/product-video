@@ -1,0 +1,16 @@
+{
+  "name": "product-video-project",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Capture and tooling for a product video (the Remotion edit has its own package in edit/)",
+  "scripts": {
+    "profile": "node lib/apply-profile.mjs",
+    "check": "node lib/check-env.mjs"
+  },
+  "dependencies": {
+    "ajv": "8.17.1",
+    "ajv-formats": "3.0.1",
+    "playwright": "1.62.1"
+  }
+}

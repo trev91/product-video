@@ -1,0 +1,18 @@
+# Example mobile shot (copy to shot-<id>.yaml): start screen, hold, one slow scroll.
+# Every shot flow starts from _prologue.yaml (app relaunched, signed in, on its start screen).
+# Hold with the optional-wait idiom; Maestro has no plain sleep:
+#   - extendedWaitUntil: { visible: "NEVER-SHOWN-SLEEP", timeout: 3000, optional: true }
+# Percent points must be whole numbers ("90%,20%", never "19.5%").
+# Never script an action the profile's safety.neverDo forbids: stop one tap short.
+appId: ${MAESTRO_APP_ID}
+---
+- runFlow: _prologue.yaml
+- extendedWaitUntil:
+    visible: "NEVER-SHOWN-SLEEP"
+    timeout: 3000
+    optional: true
+- swipe:
+    start: 50%, 72%
+    end: 50%, 50%
+    duration: 1400
+- waitForAnimationToEnd

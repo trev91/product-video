@@ -10,11 +10,20 @@ environment where recording is safe, and the creative decisions that are already
 
 ## Install
 
-In Claude Code (2.1.275 or later), including the Code tab of the Claude desktop app:
+The plugin lives in its own marketplace, so installing is two steps: add the marketplace, then
+install the plugin from it.
+
+**Claude desktop app:** open Settings, then Customize, then Plugins. Use **Add** to add the
+marketplace `trev91/product-video`, then install **product-video** from it.
+
+**Terminal:**
 
 ```
-/plugin install product-video --marketplace trev91/product-video
+claude plugin marketplace add trev91/product-video
+claude plugin install product-video@product-video
 ```
+
+Start a new session afterwards so the plugin loads.
 
 ## Requirements
 

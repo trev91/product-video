@@ -58,8 +58,8 @@ PROFILE="$PROFILE" DIR="$DIR" NAME="$NAME" node -e '
 echo "installing dependencies (a few minutes the first time)..."
 (cd "$DIR" && npm install --no-audit --no-fund >/dev/null 2>&1) || { echo "npm install failed in $DIR" >&2; exit 1; }
 (cd "$DIR/edit" && npm install --no-audit --no-fund >/dev/null 2>&1) || { echo "npm install failed in $DIR/edit" >&2; exit 1; }
-# Without Google Chrome, the recorder uses Playwright's own Chromium.
-if [ ! -d "/Applications/Google Chrome.app" ] && [ ! -d "$HOME/Applications/Google Chrome.app" ]; then
+# Without Google Chrome, the recorder uses Playwright's own Chromium (lib/browser.mjs decides the same way).
+if [ ! -d "/Applications/Google Chrome.app" ] && [ ! -d "$HOME/Applications/Google Chrome.app" ] && [ ! -x /opt/google/chrome/chrome ]; then
   echo "Google Chrome not found: downloading a private copy of Chromium..."
   (cd "$DIR" && npx playwright install chromium >/dev/null 2>&1) || { echo "could not download Chromium" >&2; exit 1; }
 fi

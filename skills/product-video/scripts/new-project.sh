@@ -65,6 +65,21 @@ if [ ! -d "/Applications/Google Chrome.app" ] && [ ! -d "$HOME/Applications/Goog
 fi
 # Remotion serves media from edit/public: link the project folders into it.
 (cd "$DIR/edit" && mkdir -p public && cd public && for d in raw vo music gfx; do ln -sfn "../../$d" "$d"; done)
+# Root.tsx imports edit/src/edl.json for the narrated "Video" composition, so the bundle fails
+# without it. A silent hype cut never runs build-edl.mjs (it needs voice durations): start with an
+# empty edit decision list, which build-edl.mjs overwrites.
+[ -f "$DIR/edit/src/edl.json" ] || cat > "$DIR/edit/src/edl.json" <<'EDL'
+{
+  "fps": 30,
+  "captions": [],
+  "scenes": [],
+  "musicSrc": null,
+  "totalDuration": 0,
+  "transitionFrames": 10,
+  "titleCard": { "heading": "", "subline": "" },
+  "endCard": { "heading": "", "subline": "", "contactLine": "" }
+}
+EDL
 if [ -n "$BRAND_URL" ]; then
   (cd "$DIR" && node lib/draft-profile.mjs "$BRAND_URL" "$APP_URL" > /dev/null)
   echo "profile drafted from $BRAND_URL: read $DIR/log/profile-draft.md and confirm it with the person"

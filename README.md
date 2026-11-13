@@ -10,20 +10,63 @@ environment where recording is safe, and the creative decisions that are already
 
 ## Install
 
-The plugin lives in its own marketplace, so installing is two steps: add the marketplace, then
-install the plugin from it.
+### In the Claude desktop app (no terminal needed)
 
-**Claude desktop app:** open Settings, then Customize, then Plugins. Use **Add** to add the
-marketplace `trev91/product-video`, then install **product-video** from it.
+You need the Claude desktop app on a Mac, signed in.
 
-**Terminal:**
+1. Open Claude and click the **Code** tab.
+2. Start a new session in any folder (your Documents folder is fine).
+3. Paste this message and send it:
+
+   ```text
+   Please install the product-video plugin for me. Run these two commands:
+   claude plugin marketplace add trev91/product-video
+   claude plugin install product-video@product-video
+   If "claude" is not found, use the newest claude program inside
+   ~/Library/Application Support/Claude/claude-code instead.
+   Tell me when it is installed.
+   ```
+
+4. If Claude asks permission to run a command, click **Allow**.
+5. When Claude says it is installed, start a **new session**.
+6. Type `set up video making` and send it. Claude checks your Mac and installs anything missing,
+   asking first. This takes a few minutes and about 250 MB.
+7. When it says you are ready, ask for a video in one of two ways:
+   - **From your live app:** give your website and your app's address. Claude records the app in
+     look-only mode.
+
+     ```text
+     Make a product video. Brand from https://example.com, app at https://app.example.com
+     ```
+
+   - **From your own screenshots or screen recordings:** give your website, then attach the files
+     or name the folder they are in. Nothing is recorded and Claude never opens your app.
+
+     ```text
+     Make a product video from my screenshots. Brand from https://example.com. The files are in my Downloads folder, in "video screenshots".
+     ```
+
+   You can also combine them: record what Claude can reach and supply screenshots for the rest.
+
+If a pop-up offers to install "command line developer tools" during step 3, click **Install**,
+wait for it to finish, then send the message again.
+
+**Tips for screenshots**
+
+- Capture just the app, without the browser's address bar or your desktop around it.
+- Check that no real names, emails or phone numbers are showing, or tell Claude what to cover.
+- A screenshot shows no clicking or typing, so send a short screen recording for any step where
+  the motion matters.
+
+### In a terminal
 
 ```
 claude plugin marketplace add trev91/product-video
 claude plugin install product-video@product-video
 ```
 
-Start a new session afterwards so the plugin loads.
+Start a new session afterwards so the plugin loads. To update later:
+`claude plugin marketplace update product-video`, then `claude plugin update product-video@product-video`.
 
 ## Requirements
 

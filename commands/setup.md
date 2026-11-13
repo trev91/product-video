@@ -1,8 +1,8 @@
 ---
-description: Check this Mac for what video making needs, and install anything missing (with your OK)
+description: Check this computer for what video making needs, and install anything missing (with your OK)
 ---
 
-Get this Mac ready to make product videos, for a person who is not technical.
+Get this computer (a Mac, or Linux for web videos) ready to make product videos, for a person who is not technical.
 
 1. Run `"${CLAUDE_PLUGIN_ROOT}/skills/product-video/scripts/setup.sh" check` and read the result.
 2. If everything is READY, say so in one sentence and ask what video they would like.

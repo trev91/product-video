@@ -58,13 +58,28 @@ PROFILE="$PROFILE" DIR="$DIR" NAME="$NAME" node -e '
 echo "installing dependencies (a few minutes the first time)..."
 (cd "$DIR" && npm install --no-audit --no-fund >/dev/null 2>&1) || { echo "npm install failed in $DIR" >&2; exit 1; }
 (cd "$DIR/edit" && npm install --no-audit --no-fund >/dev/null 2>&1) || { echo "npm install failed in $DIR/edit" >&2; exit 1; }
-# Without Google Chrome, the recorder uses Playwright's own Chromium.
-if [ ! -d "/Applications/Google Chrome.app" ] && [ ! -d "$HOME/Applications/Google Chrome.app" ]; then
+# Without Google Chrome, the recorder uses Playwright's own Chromium (lib/browser.mjs decides the same way).
+if [ ! -d "/Applications/Google Chrome.app" ] && [ ! -d "$HOME/Applications/Google Chrome.app" ] && [ ! -x /opt/google/chrome/chrome ]; then
   echo "Google Chrome not found: downloading a private copy of Chromium..."
   (cd "$DIR" && npx playwright install chromium >/dev/null 2>&1) || { echo "could not download Chromium" >&2; exit 1; }
 fi
 # Remotion serves media from edit/public: link the project folders into it.
 (cd "$DIR/edit" && mkdir -p public && cd public && for d in raw vo music gfx; do ln -sfn "../../$d" "$d"; done)
+# Root.tsx imports edit/src/edl.json for the narrated "Video" composition, so the bundle fails
+# without it. A silent hype cut never runs build-edl.mjs (it needs voice durations): start with an
+# empty edit decision list, which build-edl.mjs overwrites.
+[ -f "$DIR/edit/src/edl.json" ] || cat > "$DIR/edit/src/edl.json" <<'EDL'
+{
+  "fps": 30,
+  "captions": [],
+  "scenes": [],
+  "musicSrc": null,
+  "totalDuration": 0,
+  "transitionFrames": 10,
+  "titleCard": { "heading": "", "subline": "" },
+  "endCard": { "heading": "", "subline": "", "contactLine": "" }
+}
+EDL
 if [ -n "$BRAND_URL" ]; then
   (cd "$DIR" && node lib/draft-profile.mjs "$BRAND_URL" "$APP_URL" > /dev/null)
   echo "profile drafted from $BRAND_URL: read $DIR/log/profile-draft.md and confirm it with the person"

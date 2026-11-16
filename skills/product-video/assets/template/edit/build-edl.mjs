@@ -19,6 +19,8 @@
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 
+import "../lib/tools.mjs"; // puts ~/.product-video/bin (ffprobe) on PATH
+
 const ROOT = new URL("../", import.meta.url).pathname;
 const VIDEO = JSON.parse(readFileSync(`${ROOT}edit/video.json`, "utf8"));
 const PROFILE = JSON.parse(readFileSync(`${ROOT}edit/src/profile.json`, "utf8"));

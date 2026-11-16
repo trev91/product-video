@@ -2,12 +2,12 @@
 
 One JSON file per organization, kept in that organization's own repo (suggested name
 `video-profile.json`). Schema: `assets/template/lib/profile.schema.json`. A complete example:
-`assets/template/profile.example.json`. `new-project.sh` copies it into each video project as
+`assets/template/profile.example.json`. `scripts/new-project.mjs` copies it into each video project as
 `profile.json`, where `lib/profile.mjs` validates it on every run.
 
 ## Drafting one from two URLs
 
-`scripts/new-project.sh <dir> <name> --from-urls <brand-url> <app-url>` (or, in an existing
+`node scripts/new-project.mjs <dir> <name> --from-urls <brand-url> <app-url>` (or, in an existing
 project, `node lib/draft-profile.mjs <brand-url> <app-url>`) writes `profile.json` and
 `log/profile-draft.md`.
 

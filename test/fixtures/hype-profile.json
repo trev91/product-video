@@ -1,0 +1,48 @@
+{
+  "$schema": "../../skills/product-video/assets/template/lib/profile.schema.json",
+  "schemaVersion": 1,
+  "organization": {
+    "name": "Example Co"
+  },
+  "product": {
+    "name": "Northwind",
+    "tagline": "Everything in one place.",
+    "windowTitle": "Northwind Admin"
+  },
+  "brand": {
+    "colors": {
+      "accent": "#3B82F6",
+      "dark": "#1F2937",
+      "light": "#FFFFFF"
+    },
+    "fonts": {
+      "heading": "Inter",
+      "body": "Inter"
+    }
+  },
+  "web": {
+    "baseUrl": "http://localhost:4173",
+    "probePaths": ["/"],
+    "auth": { "type": "none" }
+  },
+  "environment": {
+    "kind": "local",
+    "description": "A fictional test page served from this repository's fixtures. No real people or data.",
+    "allowedHosts": ["localhost:4173"]
+  },
+  "safety": {
+    "neverDo": ["submit a form"],
+    "mask": ["real names", "email addresses", "phone numbers"]
+  },
+  "narration": {
+    "mode": "silent"
+  },
+  "music": {
+    "mode": "none",
+    "bpm": 120
+  },
+  "delivery": {
+    "handoff": "Test fixture: nothing is delivered."
+  },
+  "decisions": []
+}

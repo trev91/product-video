@@ -1,0 +1,24 @@
+- banner:
+  - link "Northwind":
+    - /url: /
+  - navigation:
+    - link "Tee Sheet":
+      - /url: /tee-sheet
+    - link "Recent Activity":
+      - /url: /activity
+- main:
+  - heading "Good morning, Avery" [level=2]
+  - text: Maple Hollow
+  - paragraph: Your next booking is on Saturday.
+  - table:
+    - row "Name Email Phone":
+      - cell "Name"
+      - cell "Email"
+      - cell "Phone"
+    - row:
+      - cell "Quinn Example"
+      - cell "quinn@example.com"
+      - cell "(555) 010-0199"
+  - button "Save Changes"
+  - heading "Book Tee Times" [level=3]
+  - text: "Starts at 7:30"

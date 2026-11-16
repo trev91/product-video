@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Book - Northwind Admin</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; background: #f5f7fb; color: #1f2937; }
+    header { background: #1f2937; color: #fff; padding: 16px 32px; }
+    header a { color: #fff; }
+    main { padding: 32px; }
+    label { display: block; margin: 12px 0 4px; }
+    input, select { padding: 8px; width: 320px; }
+  </style>
+</head>
+<body>
+  <!-- Fictional test page for product-video's tests. No real people or data. -->
+  <header><nav><a href="/">Home</a> <a href="/book.html">Book</a></nav></header>
+  <main>
+    <h1>Book a time</h1>
+    <form action="/never-submitted" method="post">
+      <label for="day">Day</label><input id="day" type="date">
+      <label for="time">Time</label><input id="time" type="time">
+      <label for="players">Players</label><select id="players"><option>1</option><option>2</option></select>
+      <label for="note">Note</label><input id="note" type="text">
+      <button type="submit">Book</button>
+    </form>
+  </main>
+</body>
+</html>

@@ -1,22 +1,13 @@
 /**
- * Launches the browser the recorder drives: the installed Google Chrome when there is one,
- * otherwise Playwright's own Chromium (downloaded by new-project.sh when Chrome is missing).
+ * Launches the browser the recorder drives: the installed Google Chrome or Chromium when there is
+ * one (see findChrome in tools.mjs, which honours PRODUCT_VIDEO_CHROME), otherwise Playwright's own
+ * Chromium (downloaded by new-project.mjs when no browser is found).
  */
 import { chromium } from "playwright";
-import { existsSync } from "node:fs";
-import os from "node:os";
-import path from "node:path";
 
-const CHROME_APPS = ["/Applications/Google Chrome.app", path.join(os.homedir(), "Applications", "Google Chrome.app")];
-/** Where Playwright's "chrome" channel looks on Linux (the google-chrome-stable package installs it here). */
-const LINUX_CHROME = "/opt/google/chrome/chrome";
-
-export function hasChrome() {
-  if (process.platform === "darwin") return CHROME_APPS.some((app) => existsSync(app));
-  if (process.platform === "linux") return existsSync(LINUX_CHROME);
-  return true;
-}
+import { findChrome } from "./tools.mjs";
 
 export function launchBrowser(options = {}) {
-  return chromium.launch({ ...(hasChrome() ? { channel: "chrome" } : {}), ...options });
+  const executablePath = findChrome();
+  return chromium.launch({ ...(executablePath ? { executablePath } : {}), ...options });
 }

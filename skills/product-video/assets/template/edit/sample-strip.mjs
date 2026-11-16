@@ -2,6 +2,8 @@
 // for finding the moment a screen changes:
 //   CROP=300:35:150:740 node sample-strip.mjs <clip> <from> <to> [step]     (CROP is ffmpeg's w:h:x:y)
 import { execFileSync } from "node:child_process";
+
+import "../lib/tools.mjs"; // puts ~/.product-video/bin (ffmpeg) on PATH
 const [file, from, to, step = "0.25"] = process.argv.slice(2);
 const out = [];
 for (let t = Number(from); t <= Number(to) + 1e-9; t += Number(step)) {

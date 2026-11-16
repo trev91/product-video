@@ -73,9 +73,12 @@ Start a new session afterwards so the plugin loads. To update later:
 macOS. Ask Claude to "set up video making" (or run `/product-video:setup`): it checks the Mac and, with
 your OK, installs what is missing into a folder in your home directory, with no administrator password.
 
-Linux (tried on Debian 13, x86-64) works for web videos: the profile draft, the web recorder and the
-hype-cut render. Mobile capture and the `system` voice (macOS `say`) do not; use
-`narration.mode` `command`, `recorded` or `silent` there.
+Linux (tried on Debian 13, x86-64) works for web videos: setup, the profile draft, the web recorder
+and the hype-cut render. Every step runs as `node <script>`, so it also works for agents and CI that
+may not run `bash` or `source`. Google Chrome or Chromium is found on `PATH` or the usual paths (or
+set `PRODUCT_VIDEO_CHROME`), and renders reuse it instead of downloading a browser. Mobile capture
+is macOS only. The `system` voice uses espeak-ng when it is installed; without it, use
+`narration.mode` `command`, `recorded` or `silent`, or captions only.
 
 - Node 20 or newer and ffmpeg with libx264 (installed for you if missing). Google Chrome is used when
   present; otherwise a private Chromium is downloaded.
@@ -107,7 +110,14 @@ hype-cut render. Mobile capture and the `system` voice (macOS `say`) do not; use
 
 ## Status
 
-Version 0.2.0: the engine, the profile schema, a start from two URLs, and videos made from supplied screenshots and videos. The template renders and the web recorder runs
+Version 0.3.0: robustness and Linux. Every core step (setup, new project, render, export, cuts) is a
+Node script that finds its own tools, with the shell scripts kept as thin wrappers; wider Chrome and
+Chromium lookup; renders reuse the installed Chrome on Linux; a Linux voice (espeak-ng) or a clear
+stop with a captions-only option; explore flags possible names, emails and phone numbers and never
+suggests typing on a live app; a guard against windows running off the frame; and a Linux CI check.
+
+Version 0.2.0: the engine, the profile schema, a start from two URLs, and videos made from supplied
+screenshots and videos. The template renders and the web recorder runs
 end to end against a test page. It has not yet been run on a second organization's product, the
 mobile scripts are untested outside the product they came from, and mobile capture is iOS Simulator only.
 

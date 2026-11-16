@@ -3,28 +3,34 @@
 Contents: project layout · data files · supplied media · web recording · mobile recording · voice · timing tools ·
 render · gotchas.
 
-## Project layout (created by `scripts/new-project.sh <dir> <name> <profile.json>`)
+## Project layout (created by `node scripts/new-project.mjs <dir> <name> <profile.json>`)
 
 ```
 <dir>/
   profile.json   the organization profile for this project (validated on every run)
   lib/           profile.mjs (load, validate, guard, sign in), apply-profile.mjs, check-env.mjs, profile.schema.json,
+                 tools.mjs (puts ~/.product-video/bin on PATH, finds Chrome), browser.mjs,
                  draft-profile.mjs + brand-from-url.mjs (draft a profile from two URLs)
   harness/       web capture: lib.mjs, record.mjs, shots-web.mjs, probe-web.mjs, explore.mjs, sign-in.mjs, hq.mjs,
-                 shots-hype.mjs, convert-web.sh
+                 shots-hype.mjs, explore-rules.mjs, convert-web.mjs
   mobile/        simulator capture: device.sh, session.sh, record-shot.sh, record-batch.sh, _prologue.yaml, shot-*.yaml
-  edit/          Remotion project: video.json, shots.json, build-edl.mjs, cuts.txt, make-cuts.sh, stills.mjs, src/
-  vo/            lines.json (script), gen-vo.mjs, <prefix><shot>.wav, <prefix>durations.json
+  edit/          Remotion project: video.json, shots.json, build-edl.mjs, cuts.txt, make-cuts.mjs, stills.mjs, src/
+  vo/            lines.json (script), gen-vo.mjs, voices.mjs, <prefix><shot>.wav, <prefix>durations.json
   captions/      optional hand-written <name>.srt
   raw/web/       shot-<id>-take<n>.webm/.mp4 + .json marker sidecars, still-<id>.png, hq-<id>.mp4
   raw/mobile/    shot-<id>-take<n>.mp4
   raw/cuts/      clips baked for the hype cut
   raw/media/     supplied screenshots and videos (<nn>-<name>.png/.jpg/.mp4) + index.json
   gfx/ music/    logo, optional music file
-  export/        make-deliverables.sh, render-hype.sh, qc.sh, contact-sheet.sh, the MP4s
+  export/        make-deliverables.mjs, render-hype.mjs, qc.mjs, contact-sheet.mjs, the MP4s
   log/           recording-log.txt, probe output, contact sheets
 ```
 `edit/public/{raw,vo,music,gfx}` are symlinks into the project so Remotion's `staticFile()` sees them.
+
+Every step is a Node script: run it as `node <path>` from anywhere, with no shell and no
+`source`. The scripts put `~/.product-video/bin` (setup's ffmpeg and Node) on `PATH` themselves.
+The `.sh` files that remain beside some of them only call the `.mjs` (the mobile scripts are still
+bash, and macOS only).
 
 ## Data files (narrated video)
 
@@ -88,7 +94,9 @@ videos; run it again to add more. Originals are never changed.
 
 ## Web recording
 
-- `harness/lib.mjs` opens the installed Chrome, checks the host against the profile, installs the
+- `harness/lib.mjs` opens the installed Chrome or Chromium (`lib/tools.mjs` `findChrome`:
+  `PRODUCT_VIDEO_CHROME` first, then Google Chrome, then `google-chrome`, `google-chrome-stable`,
+  `chromium` or `chromium-browser` on `PATH`, then Snap; Flatpak launchers are not used), checks the host against the profile, installs the
   request guards, signs in as `web.auth` says, draws the cursor, records at `web.viewport` with 2 s
   handles, and writes a `.json` sidecar with the markers and any **blocked requests**. A blocked
   request means a script reached for something it should not; fix the script.
@@ -97,7 +105,11 @@ videos; run it again to add more. Originals are never changed.
 - `explore.mjs [--max 20] [--depth 2]` crawls the app by links only (never a click or a form; it
   skips sign-out, delete, export and download links) and writes `log/explore/`: `<nn>-<page>.png`
   and `.aria.txt`, `pages.json`, `sheet.jpg` and `shot-list.md`, a ranked draft with a suggested
-  shot per page and every request the guard blocked.
+  shot per page and every request the guard blocked. Pages whose snapshot shows text that looks
+  like a person's name, an email address or a phone number are marked **check before use** and
+  listed with what was found, against `safety.mask` (a heuristic: it flags some place names and
+  can miss names). On a look-only app (`environment.kind: "live"` or `safety.readOnly`) a form is
+  suggested only as a still of the empty form; never type into it.
 - `probe-web.mjs [path ...]` saves `log/web-probe/<page>.png` and `<page>.aria.txt`. Read the aria
   file for exact roles and names (`getByRole("button", { name: "New item" })`).
 - **Read-only mode** (`safety.readOnly`): after sign-in, every request that is not GET, HEAD or
@@ -106,7 +118,7 @@ videos; run it again to add more. Originals are never changed.
   to `safety.readOnlyAllow`.
 - Shot helpers in `shots-web.mjs`: `navLink`, `field`, `action`, `row`, `toggle`, `settle`. The
   `Shot` object has `mark`, `pause`, `moveTo`, `hover`, `click`, `type`, `fill`, `scroll`.
-- `convert-web.sh` turns the webm takes into constant 30 fps H.264.
+- `node harness/convert-web.mjs` turns the webm takes into constant 30 fps H.264.
 - `hq.mjs still|clip <id>` (entries in `shots-hype.mjs`) captures 2x stills and a screencast with
   no cursor, for the hype cut.
 
@@ -127,10 +139,15 @@ videos; run it again to add more. Originals are never changed.
 ## Voice
 
 `node vo/gen-vo.mjs [--shots a,b] [--prefix vo-]` follows `narration.mode`:
-`system` (macOS `say`), `command` (the profile's own command reads `$VO_TEXT_FILE`, writes
+`system` (macOS `say`, or `espeak-ng`/`espeak` on Linux when installed; with neither it stops and
+says so), `command` (the profile's own command reads `$VO_TEXT_FILE`, writes
 `$VO_OUT`), `recorded` (measures supplied files), `silent`. `narration.pronunciations` rewrites
 spellings before speaking. A different voice later: generate under another prefix and build with
 `VO_PREFIX=<prefix> node build-edl.mjs`.
+No voice yet (Linux without espeak-ng, say): `node vo/gen-vo.mjs --captions-only` writes silent
+placeholder files timed from the words at `narration.wordsPerMinute`, with a warning, so the edit
+and its captions build; replace them before delivery. An offline neural voice such as piper fits
+`command` mode, for example `"command": "piper --model <voice>.onnx --output_file \"$VO_OUT\" < \"$VO_TEXT_FILE\""`.
 
 ## Timing tools
 
@@ -139,19 +156,24 @@ spellings before speaking. A different voice later: generate under another prefi
   frame rate: seek timing matches Remotion, frame counting drifts.
 - `ffmpeg -ss T -i clip -frames:v 1 out.png` for trim checks; `fps=1/2,scale=...,tile=10x2` for a
   quick contact sheet of a take.
-- `node edit/stills.mjs <Video|Hype> <outDir> <frame>...` renders half-scale frames of the edit.
+- `node edit/stills.mjs [--check] <Video|Hype> <outDir> <frame>...` renders half-scale frames of the
+  edit. `--check` lists every frame where a `Browser` window crosses the frame edge and exits 2.
 
 ## Render
 
-- Narrated: `export/make-deliverables.sh` (master + two-pass delivery, `VIDEO_KBPS` to change the
-  bitrate), `export/qc.sh` (size against `delivery.maxSizeMb`, codecs, loudness),
-  `export/contact-sheet.sh` (one frame per 12 s).
-- Hype: `export/render-hype.sh <name>` (Rec. 709 master, a smaller preview, and the raw render).
+- Narrated: `node export/make-deliverables.mjs` (master + two-pass delivery, `VIDEO_KBPS` to change
+  the bitrate), `node export/qc.mjs` (size against `delivery.maxSizeMb`, codecs, loudness),
+  `node export/contact-sheet.mjs` (one frame per 12 s; `--every 2` for a short cut).
+- Hype: `node export/render-hype.mjs <name>` (Rec. 709 master, a smaller preview, and the raw
+  render); `--frames 0-149` renders just those frames as a quick sample.
+- The browser Remotion renders with: on Linux the installed Chrome or Chromium (Remotion's
+  `chrome-for-testing` mode), so the first render downloads nothing; elsewhere Remotion's own
+  Chrome Headless Shell (about 100 MB, once). `PRODUCT_VIDEO_REMOTION_BROWSER=system` or `bundled`
+  overrides that.
 
 ## Gotchas
 
 - Start services from background shell commands and stop them by port at the end.
-- zsh does not word-split `$VAR` in `for x in $VAR`; the project scripts are bash for that reason.
 - Remotion `Composition` props must extend `Record<string, unknown>` to pass the type check.
 - A text-to-speech model may read a leading style instruction aloud; send plain script text.
 - Natural speech often runs faster than planned: check `durations.json` against the brief.

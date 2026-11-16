@@ -92,13 +92,13 @@ making"). To update later: `claude plugin marketplace update product-video`, the
 
 Everything specific to your organization lives in one profile file: brand, the apps to record,
 the environment where recording is safe, and creative decisions already settled. The engine is a
-project template that `new-project.sh` copies for each video. Paths below are inside that project,
+project template that `new-project.mjs` copies for each video. Paths below are inside that project,
 except `scripts/`, which is in [`skills/product-video/`](skills/product-video/).
 
 ```mermaid
 flowchart TD
-  setup["scripts/setup.sh check / install<br/>Node and ffmpeg into ~/.product-video"]
-  new["scripts/new-project.sh<br/>copies the template, installs dependencies"]
+  setup["node scripts/setup.mjs check / install<br/>Node and ffmpeg into ~/.product-video"]
+  new["node scripts/new-project.mjs<br/>copies the template, installs dependencies"]
   draft["lib/draft-profile.mjs<br/>brand from the website, read-only on"]
   apply["lib/apply-profile.mjs<br/>brand, logo and fonts into the edit"]
   env["lib/check-env.mjs<br/>allowed hosts, services up?"]
@@ -110,9 +110,9 @@ flowchart TD
 
   subgraph capture ["Capture (mix freely)"]
     explore["harness/explore.mjs<br/>follows links only, drafts a shot list"]
-    rec["harness/record.mjs + convert-web.sh<br/>web shots with a cursor"]
+    rec["harness/record.mjs + convert-web.mjs<br/>web shots with a cursor"]
     hq["harness/hq.mjs still / clip<br/>2x stills and screencasts, no cursor"]
-    mobile["mobile/session.sh + record-batch.sh<br/>iOS Simulator and Maestro"]
+    mobile["mobile/session.sh + record-batch.sh<br/>iOS Simulator and Maestro, macOS only"]
     media["lib/import-media.mjs<br/>your screenshots and videos"]
     explore --> rec
     explore --> hq
@@ -126,14 +126,14 @@ flowchart TD
     vo["vo/gen-vo.mjs<br/>voice per shot"]
     edl["edit/build-edl.mjs<br/>shots.json + lines.json to edl.json"]
     video["Remotion composition: Video"]
-    deliver["export/make-deliverables.sh<br/>then qc.sh and contact-sheet.sh"]
+    deliver["export/make-deliverables.mjs<br/>then qc.mjs and contact-sheet.mjs"]
     vo --> edl --> video --> deliver
   end
 
   subgraph hype ["Silent hype cut"]
-    cuts["edit/make-cuts.sh<br/>baked clips in raw/cuts"]
+    cuts["edit/make-cuts.mjs<br/>baked clips in raw/cuts"]
     scenes["edit/src/hype/ scenes<br/>Remotion composition: Hype"]
-    renderhype["export/render-hype.sh<br/>master + web preview"]
+    renderhype["export/render-hype.mjs<br/>master + web preview"]
     cuts --> scenes --> renderhype
   end
 
@@ -156,13 +156,17 @@ has the file formats and gotchas.
 
 ## Requirements
 
-- **macOS**, or **Linux for web videos** (tried on Debian 13, x86-64): the profile draft, the web
-  recorder and the hype-cut render work there. Mobile capture and the `system` voice (macOS `say`)
-  do not; use `narration.mode` `command`, `recorded` or `silent` on Linux.
+- **macOS**, or **Linux for web videos** (tried on Debian 13, x86-64): setup, the profile draft,
+  the web recorder and the hype-cut render work there. Every step runs as `node <script>`, so it
+  also works for agents and CI that may not run `bash` or `source`. Mobile capture is macOS only.
+  The `system` voice uses macOS `say`, or espeak-ng on Linux when it is installed; without it, use
+  `narration.mode` `command`, `recorded` or `silent`, or captions only.
 - **Node 20+ and ffmpeg with libx264.** Setup installs them into `~/.product-video` if missing,
-  with no administrator password; delete that folder to undo it. Google Chrome is used when
-  present, otherwise the first project downloads a private Chromium (about 150 MB).
-- **About 1 GB per project** for its dependencies, plus a headless browser for the first render.
+  with no administrator password; delete that folder to undo it.
+- **Chrome or Chromium.** Google Chrome or Chromium is found on `PATH` or the usual paths (or set
+  `PRODUCT_VIDEO_CHROME`), and renders reuse it. Otherwise the first project downloads a private
+  Chromium (about 150 MB).
+- **About 1 GB per project** for its dependencies.
 - **Mobile capture only:** macOS with Xcode's iOS Simulator and Maestro. Web-only use needs neither.
 - **Remotion licence:** the edit is built with Remotion, which is free for individuals and
   companies of up to three people. Larger organizations need a paid Remotion company licence.
@@ -183,6 +187,13 @@ has the file formats and gotchas.
 - **Upload, post or commit** a video unless you ask.
 
 ## Status
+
+Version 0.3.0: robustness and Linux. Every core step (setup, new project, render, export, cuts) is a
+Node script that finds its own tools, with the shell scripts kept as thin wrappers; wider Chrome and
+Chromium lookup; renders reuse the installed Chrome on Linux; a Linux voice (espeak-ng) or a clear
+stop with a captions-only option; explore flags possible names, emails and phone numbers and never
+suggests typing on a live app; and a guard against windows running off the frame. A Linux CI
+workflow is ready in [`docs/ci.yml.example`](docs/ci.yml.example) but not yet enabled.
 
 Version 0.2.0: the engine, the profile schema, a start from two URLs, and videos made from supplied
 screenshots and videos. The template renders and the web recorder runs end to end against a test

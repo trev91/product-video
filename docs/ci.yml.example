@@ -1,0 +1,70 @@
+# Linux checks for the plugin. No secrets and no paid services: everything runs against the
+# fictional fixtures in test/ (Example Co / Northwind, a local two-page site).
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Unit tests (Chrome lookup, setup in a scratch HOME, explore guards, voice, safe area, version)
+        run: npm test
+
+  smoke:
+    # A new project from the fixture profile, an explore of the local test site, and a few seconds
+    # of the hype cut rendered with the runner's Google Chrome.
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Scratch paths
+        run: |
+          echo "PROJECT=$RUNNER_TEMP/pv-smoke" >> "$GITHUB_ENV"
+          echo "SCRATCH_HOME=$RUNNER_TEMP/pv-home" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+      - name: setup.sh and setup.mjs check in a fresh HOME
+        run: |
+          mkdir -p "$SCRATCH_HOME"
+          HOME="$SCRATCH_HOME" bash skills/product-video/scripts/setup.sh check
+          HOME="$SCRATCH_HOME" node skills/product-video/scripts/setup.mjs check
+      - name: New project from the fixture profile (node, no bash)
+        run: node skills/product-video/scripts/new-project.mjs "$PROJECT" ci-hype test/fixtures/hype-profile.json
+      - name: Typecheck the edit
+        run: npm --prefix "$PROJECT/edit" run typecheck
+      - name: Explore the local fixture site
+        run: |
+          node test/serve-fixture.mjs 4173 &
+          sleep 1
+          node "$PROJECT/harness/explore.mjs"
+          grep -q "check before use" "$PROJECT/log/explore/shot-list.md"
+      - name: Review stills with the off-frame check
+        working-directory: ${{ env.PROJECT }}/edit
+        run: node stills.mjs --check Hype "$PROJECT/log/stills" 30 300 480 700
+      - name: Render three seconds of the hype cut
+        run: |
+          node "$PROJECT/export/render-hype.mjs" ci-hype --frames 0-89
+          node "$PROJECT/export/qc.mjs" ci-hype.mp4
+          node "$PROJECT/export/contact-sheet.mjs" ci-hype-web.mp4 --every 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hype-sample
+          path: |
+            ${{ env.PROJECT }}/export/ci-hype-web.mp4
+            ${{ env.PROJECT }}/log/sheets/
+            ${{ env.PROJECT }}/log/explore/shot-list.md
+          retention-days: 7

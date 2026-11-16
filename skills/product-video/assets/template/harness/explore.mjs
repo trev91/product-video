@@ -4,6 +4,9 @@
  * and the profile's guards, read-only mode included, stay on throughout.
  * Writes to log/explore/: a screenshot and accessibility snapshot per page,
  * pages.json, a contact sheet, and shot-list.md (a draft to refine with the person).
+ * Pages showing text that looks like a name, an email address or a phone number are listed
+ * as "check before use" against safety.mask. On a live or read-only app a form is only
+ * ever suggested as a still of the empty form.
  *   node explore.mjs [--max 20] [--depth 2]
  */
 import { execFileSync } from "node:child_process";
@@ -11,6 +14,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 import { PROJECT_DIR } from "../lib/profile.mjs";
+import { findPersonalData, isLookOnly, shotListMarkdown, suggestion } from "./explore-rules.mjs";
 import { openContext, profile } from "./lib.mjs";
 
 const args = process.argv.slice(2);
@@ -52,14 +56,7 @@ function describePage() {
 /** How much there is to show: data and visuals count for more than plain text. */
 const richness = (page) => page.charts * 4 + page.tables * 3 + Math.min(page.cards, 8) + Math.min(page.inputs, 6) + (page.heading ? 1 : 0);
 
-function suggestion(page) {
-  if (page.hasPassword) return "skip (sign-in page)";
-  if (page.charts) return "hero still with a camera push on the chart";
-  if (page.tables) return "still of the list, then a slow scroll";
-  if (page.inputs >= 3) return "show the form filled in; stop before submitting";
-  if (page.height > 1800) return "slow scroll";
-  return "short still, or skip";
-}
+const LOOK_ONLY = isLookOnly(profile);
 
 const origin = new URL(profile.web.baseUrl).origin;
 const start = (profile.web.probePaths ?? ["/"]).map((probePath) => new URL(probePath, origin).href);
@@ -82,9 +79,11 @@ while (queue.length && pages.length < MAX_PAGES) {
     const info = await page.evaluate(describePage);
     const name = String(pages.length + 1).padStart(2, "0") + "-" + (landed.pathname.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "") || "home");
     await page.screenshot({ path: path.join(OUT, `${name}.png`) });
-    writeFileSync(path.join(OUT, `${name}.aria.txt`), await page.locator("body").ariaSnapshot());
+    const aria = await page.locator("body").ariaSnapshot();
+    writeFileSync(path.join(OUT, `${name}.aria.txt`), aria);
     const { links, ...summary } = info;
-    pages.push({ name, path: landed.pathname + landed.search, via, depth, ...summary, score: richness(info), suggestion: suggestion(info) });
+    const personalData = findPersonalData(aria);
+    pages.push({ name, path: landed.pathname + landed.search, via, depth, ...summary, score: richness(info), suggestion: suggestion(info, { lookOnly: LOOK_ONLY }), personalData });
     console.log(`${name}: ${info.heading || info.title} (score ${richness(info)})`);
     if (depth >= MAX_DEPTH) continue;
     // Navigation links first: they are the app's own map of what matters.
@@ -106,19 +105,9 @@ if (pages.length) {
   execFileSync("ffmpeg", ["-v", "error", "-y", "-pattern_type", "glob", "-i", path.join(OUT, "[0-9][0-9]-*.png"),
     "-vf", `scale=480:-2,tile=${columns}x${Math.ceil(pages.length / columns)}`, "-frames:v", "1", path.join(OUT, "sheet.jpg")]);
 }
-const ranked = [...pages].sort((a, b) => b.score - a.score);
-writeFileSync(path.join(OUT, "shot-list.md"), `# Proposed shots (draft)
-
-${pages.length} page(s) of ${origin} visited by following links only. Nothing was clicked or submitted.
-Strongest candidates first. Refine this with the person: the crawl shows what exists, not what matters.
-
-| # | Page | What is on it | Suggested shot | Reached via |
-|---|------|---------------|----------------|-------------|
-${ranked.map((item, index) => `| ${index + 1} | \`${item.path}\` ${item.heading || item.title} | ${[item.charts && `${item.charts} chart(s)`, item.tables && `${item.tables} table(s)`, item.cards && `${item.cards} card(s)`, item.inputs && `${item.inputs} input(s)`].filter(Boolean).join(", ") || "text"} | ${item.suggestion} | ${item.via} |`).join("\n")}
-
-Buttons seen (never pressed): ${[...new Set(pages.flatMap((item) => item.buttons))].slice(0, 30).join(" · ") || "none"}
-
-${blocked.length ? `Requests the guard blocked while exploring:\n${[...new Set(blocked)].map((line) => `- ${line}`).join("\n")}\nIf a page looks empty, one of these may be a read: see safety.readOnlyAllow.` : "No request was blocked."}
-${queue.length ? `\nNot visited (limit reached): ${queue.length} link(s); raise --max or --depth.` : ""}
-`);
-console.log(`\n${pages.length} page(s). Read log/explore/shot-list.md and look at log/explore/sheet.jpg.`);
+writeFileSync(
+  path.join(OUT, "shot-list.md"),
+  shotListMarkdown({ origin, pages, blocked, notVisited: queue.length, lookOnly: LOOK_ONLY, mask: profile.safety.mask }),
+);
+const toCheck = pages.filter((item) => item.personalData.length).length;
+console.log(`\n${pages.length} page(s)${toCheck ? `, ${toCheck} to check before use (possible names, emails or phone numbers)` : ""}. Read log/explore/shot-list.md and look at log/explore/sheet.jpg.`);

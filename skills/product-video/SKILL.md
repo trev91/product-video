@@ -19,22 +19,27 @@ lives in one **profile** file; the engine in `assets/template/` is the same for 
    final: confirm it, and never guess the `environment` and `safety` sections.
 2. **Read its `safety` and `decisions`.** `safety.neverDo` and `safety.mask` bind every shot you
    script. `decisions` are settled: apply them without asking again.
-3. **Check the machine:** `scripts/setup.sh check`. If anything is MISSING, explain what
-   `scripts/setup.sh install` will add and get a yes before running it (see below). Web-only
-   organizations do not need Xcode or Maestro.
-4. **Load the tools in every shell command.** Shell state does not persist between commands, so
-   start each one that runs `node`, `npx` or `ffmpeg` directly with
-   `source ~/.product-video/env.sh 2>/dev/null;`. The project's `.sh` scripts load it themselves.
+3. **Check the machine:** `node scripts/setup.mjs check`. If anything is MISSING, explain what
+   `node scripts/setup.mjs install` will add and get a yes before running it (see below). Web-only
+   organizations do not need Xcode or Maestro. With no Node.js at all, use `scripts/setup.sh`
+   instead (same arguments): it installs Node first.
+4. **Run every step as `node <script>`.** The pipeline's scripts are Node and find
+   `~/.product-video/bin` themselves: no `source`, no `bash`, no `cd` needed. Give absolute paths,
+   and keep one command per call (no loops or `$(...)`), so a strict allow list of `node`, `npm`,
+   `npx` and `ffmpeg` is enough. Inside a project, run `node <project>/edit/stills.mjs` from
+   `<project>/edit` (it bundles `src/` from the current folder); the others work from anywhere.
 
 ## Setup on a new machine
 
-`scripts/setup.sh install` adds only what `check` reported missing, into `~/.product-video`, with no
+`node scripts/setup.mjs install` adds only what `check` reported missing, into `~/.product-video`, with no
 administrator password: Node.js from nodejs.org (checksum-verified, about 50 MB) and ffmpeg and
 ffprobe from the npm packages `ffmpeg-static` and `@ffprobe-installer/ffprobe` (about 65 MB). Without Google
-Chrome, the first project downloads a private Chromium (about 150 MB). Before installing, tell the
+Chrome or Chromium, the first project downloads a private Chromium (about 150 MB). Set
+`PRODUCT_VIDEO_CHROME` to a browser binary to choose one. Before installing, tell the
 person what will be added, where, how big, and that deleting `~/.product-video` undoes it; install
 only on their yes. The first project then takes several minutes and about 1 GB for its own
-dependencies, and the first render downloads a headless browser (about 100 MB): say so up front.
+dependencies, and on a Mac the first render downloads a headless browser (about 100 MB; on Linux
+the installed Chrome is used): say so up front.
 
 ## Working with a non-technical person
 
@@ -66,11 +71,11 @@ Mechanics, file formats and gotchas: [references/pipeline.md](references/pipelin
    - Narrated tour: one scene per feature, one or two shots per scene, a title card first and an
      end card last. Write `vo/lines.json` and `edit/video.json`.
    - Hype cut: 30 to 60 seconds, silent, on a beat grid. See [references/hype-cut.md](references/hype-cut.md).
-2. **Project.** `scripts/new-project.sh <dir> <name> <profile.json>` copies the template, installs
+2. **Project.** `node scripts/new-project.mjs <dir> <name> <profile.json>` copies the template, installs
    dependencies and applies the profile. With only URLs:
-   `scripts/new-project.sh <dir> <name> --from-urls <brand-url> <app-url>` drafts the profile
+   `node scripts/new-project.mjs <dir> <name> --from-urls <brand-url> <app-url>` drafts the profile
    (read-only mode on) and writes `log/profile-draft.md` to go through with the person. With no
-   app to record: `scripts/new-project.sh <dir> <name> --from-media <brand-url>` drafts the brand
+   app to record: `node scripts/new-project.mjs <dir> <name> --from-media <brand-url>` drafts the brand
    only. After any later change to `profile.json`, run `node lib/apply-profile.mjs` in the project.
 3. **Environment.** `node lib/check-env.mjs` prints the environment, the rules and which services
    are down. Start the profile's `environment.services` from background shell commands. The
@@ -79,6 +84,8 @@ Mechanics, file formats and gotchas: [references/pipeline.md](references/pipelin
    `node harness/sign-in.mjs` (a visible window; you never see the password). `node harness/explore.mjs`
    follows the app's links, snapshots each page and drafts `log/explore/shot-list.md`; look at
    `log/explore/sheet.jpg`, then agree the shot list with the person before recording anything.
+   Pages marked **check before use** show what may be a person's name, email or phone number,
+   even in a mock-up: look at each one against `safety.mask` and mask, replace or skip it.
    Write shots against the exact control names in the `.aria.txt` snapshots, never from memory.
    `node harness/probe-web.mjs <path>` re-snapshots a single page.
 5. **Supplied media** (instead of, or as well as, recording). `node lib/import-media.mjs <files or
@@ -86,15 +93,17 @@ Mechanics, file formats and gotchas: [references/pipeline.md](references/pipelin
    `log/media/sheet.jpg`. Look at every item (read the image files themselves, not only the sheet)
    for anything in `safety.mask`, agree which item backs which line, then skip to the voice step if
    nothing is recorded. Details: the "Supplied media" section of the pipeline reference.
-6. **Record.** Web: entries in `harness/shots-web.mjs`, then `node record.mjs <ids>` and
-   `./convert-web.sh`. Mobile: one `mobile/shot-<id>.yaml` per shot, `./session.sh start`, then
+6. **Record.** Web: entries in `harness/shots-web.mjs`, then `node harness/record.mjs <ids>` and
+   `node harness/convert-web.mjs`. Mobile: one `mobile/shot-<id>.yaml` per shot, `./session.sh start`, then
    `SHOTS="..." ./record-batch.sh`. Look at a contact sheet of every take before moving on.
-7. **Voice** (narrated only): `node vo/gen-vo.mjs`, driven by the profile's `narration`.
+7. **Voice** (narrated only): `node vo/gen-vo.mjs`, driven by the profile's `narration`. The
+   `system` voice is macOS `say`, or espeak-ng on Linux; with neither it stops. Then offer a
+   recorded voice, a `command` voice, or `--captions-only` (silent placeholders, said plainly).
 8. **Edit.** Narrated: fill `edit/shots.json`, run `node build-edl.mjs`. Hype: write the scenes in
-   `edit/src/hype/`. Review single frames (`node stills.mjs <Video|Hype> <outDir> <frame>...`)
-   before any full render.
-9. **Render and check.** Narrated: `export/make-deliverables.sh`, then `export/qc.sh` and
-   `export/contact-sheet.sh`. Hype: `export/render-hype.sh <name>`. Read the contact sheet for
+   `edit/src/hype/`; place windows with `fitBrowser()`. Review single frames
+   (`node stills.mjs --check <Video|Hype> <outDir> <frame>...`) before any full render.
+9. **Render and check.** Narrated: `node export/make-deliverables.mjs`, then `node export/qc.mjs`
+   and `node export/contact-sheet.mjs`. Hype: `node export/render-hype.mjs <name>`. Read the contact sheet for
    anything in `safety.mask`.
 10. **Hand off and clean up.** Deliver as the profile's `delivery.handoff` says, and say plainly
    what is unfinished. Run `mobile/session.sh end` (it runs the profile's cleanup flows), stop the
@@ -105,6 +114,8 @@ Mechanics, file formats and gotchas: [references/pipeline.md](references/pipelin
 - **Stop one step short.** Show a form filled in, never submitted; a draft, never approved; a
   checkout, never confirmed, unless the profile's environment description says that action is
   harmless there. Read-only mode and `safety.blockRequests` are backstops, not permission.
+- **Look-only means look only.** On a live app or in read-only mode, never type into a form: show
+  it as a still of the empty form.
 - **A live app is recorded read-only.** `environment.kind: "live"` is only valid with
   `safety.readOnly: true`. Add to `safety.readOnlyAllow` only a request you have checked is a pure
   read, and tell the person which one and why. Read-only mode does not cover WebSocket messages, so

@@ -28,12 +28,14 @@ of each pattern and renders before anything is recorded.
 - `Type.tsx`: `words(text, start, step, accentFrom)` builds a line whose words land `step` frames
   apart; `Headline`, `Eyebrow`, `Block` (a column on the left, right or centre), `Caption`.
 - `Devices.tsx`: `Phone`, `Browser`, `Camera` (zoom toward a focus point), `Layer` (screen content
-  that fades in at a frame), `Clip` and `Still` (media from `edit/public`).
+  that fades in at a frame), `Clip` and `Still` (media from `edit/public`), and `fitBrowser()`, which
+  shrinks a window's width and moves its x and y until it fits the title-safe area at a given
+  scale. `safeArea.ts` has the plain `fitWindow()` and `windowBox()` behind it.
 - `Stage.tsx`: the shared background.
 
 ## Media
 
-- Phone clips: list them in `edit/cuts.txt` and run `edit/make-cuts.sh`. It bakes each trim and
+- Phone clips: list them in `edit/cuts.txt` and run `node edit/make-cuts.mjs`. It bakes each trim and
   speed change into a constant 30 fps clip in `raw/cuts/` so Remotion never seeks a variable-frame-
   rate simulator recording. Each clip ends on a 4 s frozen tail: look at that last frame, because a
   half-open sheet or mid-transition frame reads as a bug.
@@ -46,9 +48,15 @@ of each pattern and renders before anything is recorded.
 
 ## Review and render
 
-- `node edit/stills.mjs Hype <outDir> <frame>...` bundles once and renders half-scale frames; tile
-  them with ffmpeg and read the sheet. Review every scene before the full render.
-- `export/render-hype.sh <name>` renders and writes the Rec. 709 master and a smaller preview.
+- `node edit/stills.mjs --check Hype <outDir> <frame>...` bundles once and renders half-scale
+  frames; tile them with ffmpeg and read the sheet. Review every scene before the full render.
+  `--check` also lists every frame where a `Browser` window runs off the frame edge (and exits 2).
+- It cannot see cut words. A `Camera` push zooms toward its focus point (`fx`, `fy`), so put that
+  point inside the column of text you want read, or the push crops the line mid-word. The same goes
+  for type beside a window: keep headlines inside `Block` columns and windows inside `fitBrowser`,
+  then read the stills at the end of each push.
+- `node export/render-hype.mjs <name>` renders and writes the Rec. 709 master and a smaller preview
+  (`--frames 0-149` for a quick sample first).
   Remotion's JPEG frames are full range; the script converts with a light luma dither because a
   plain conversion bands the dark glow.
 - Some chat and file-sharing tools refuse large attachments: send the preview copy when the

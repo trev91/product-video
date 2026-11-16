@@ -1,9 +1,10 @@
 import type { FC, ReactNode } from "react";
-import { AbsoluteFill, Img, OffthreadVideo, Sequence, staticFile, useCurrentFrame } from "remotion";
+import { AbsoluteFill, Img, OffthreadVideo, Sequence, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
 
-import { ACCENT_RGB, PHONE_ASPECT, STILL_ASPECT, WINDOW_TITLE } from "../brand";
+import { ACCENT_RGB, HEIGHT, PHONE_ASPECT, SAFE_X, SAFE_Y, STILL_ASPECT, WIDTH, WINDOW_TITLE } from "../brand";
 import { BODY } from "../fonts";
 import { ramp } from "./motion";
+import { fitWindow, OFF_FRAME_TAG, offFrame, windowBox } from "./safeArea";
 
 const BROWSER_BAR = 40;
 const SHADOW = `0 70px 140px rgba(0,0,0,0.65), 0 0 110px rgba(${ACCENT_RGB},0.13)`;
@@ -56,45 +57,74 @@ export const Phone: FC<Pose & { height: number; children: ReactNode }> = ({ heig
   );
 };
 
+/**
+ * A Browser width and position that stay inside the title-safe area (brand.ts SAFE_X, SAFE_Y) at
+ * the given scale. Rotation is not accounted for, so keep tilts small near the edges.
+ *   const fit = fitBrowser({ width: 1500, x: 380, scale: 1.05 });
+ *   <Browser width={fit.width} x={fit.x} y={fit.y} scale={1.05}>
+ */
+export function fitBrowser(window: { width: number; x?: number; y?: number; scale?: number }): { width: number; x: number; y: number } {
+  return fitWindow(window, {
+    frame: { width: WIDTH, height: HEIGHT },
+    aspect: STILL_ASPECT,
+    bar: BROWSER_BAR,
+    marginX: SAFE_X,
+    marginY: SAFE_Y,
+  });
+}
+
+/** Logs a tagged warning (read by `node stills.mjs --check`) while a visible window crosses the frame edge. */
+function useOffFrameWarning(name: string, width: number, height: number, pose: Pose): void {
+  const frame = useCurrentFrame();
+  const video = useVideoConfig();
+  const over = offFrame(windowBox({ width, height, x: pose.x, y: pose.y, scale: pose.scale }, video), video);
+  if (over.length > 0 && (pose.opacity ?? 1) > 0) {
+    console.warn(`${OFF_FRAME_TAG} ${name} window leaves the frame at scene frame ${frame}: ${over.join(", ")}`);
+  }
+}
+
 /** A minimal browser window with no address bar. `width` is the page width in pixels. */
-export const Browser: FC<Pose & { width: number; children: ReactNode }> = ({ width, children, ...pose }) => (
-  <AbsoluteFill style={{ alignItems: "center", justifyContent: "center", perspective: 2600, opacity: pose.opacity ?? 1 }}>
-    <div
-      style={{
-        width,
-        borderRadius: 16,
-        overflow: "hidden",
-        background: "#1b1c1e",
-        boxShadow: `${SHADOW}, 0 0 0 1px rgba(255,255,255,0.10)`,
-        transform: poseTransform(pose),
-      }}
-    >
-      <div style={{ height: BROWSER_BAR, display: "flex", alignItems: "center", padding: "0 16px", gap: 8 }}>
-        {["#5d5f63", "#4b4d51", "#3b3d40"].map((dot) => (
-          <div key={dot} style={{ width: 11, height: 11, borderRadius: 6, background: dot }} />
-        ))}
-        <div
-          style={{
-            margin: "0 auto",
-            transform: "translateX(-28px)",
-            padding: "4px 44px",
-            borderRadius: 7,
-            background: "rgba(255,255,255,0.07)",
-            fontFamily: BODY,
-            fontWeight: 500,
-            fontSize: 14,
-            color: "rgba(255,255,255,0.55)",
-          }}
-        >
-          {WINDOW_TITLE}
+export const Browser: FC<Pose & { width: number; children: ReactNode }> = ({ width, children, ...pose }) => {
+  useOffFrameWarning("Browser", width, BROWSER_BAR + width / STILL_ASPECT, pose);
+  return (
+    <AbsoluteFill style={{ alignItems: "center", justifyContent: "center", perspective: 2600, opacity: pose.opacity ?? 1 }}>
+      <div
+        style={{
+          width,
+          borderRadius: 16,
+          overflow: "hidden",
+          background: "#1b1c1e",
+          boxShadow: `${SHADOW}, 0 0 0 1px rgba(255,255,255,0.10)`,
+          transform: poseTransform(pose),
+        }}
+      >
+        <div style={{ height: BROWSER_BAR, display: "flex", alignItems: "center", padding: "0 16px", gap: 8 }}>
+          {["#5d5f63", "#4b4d51", "#3b3d40"].map((dot) => (
+            <div key={dot} style={{ width: 11, height: 11, borderRadius: 6, background: dot }} />
+          ))}
+          <div
+            style={{
+              margin: "0 auto",
+              transform: "translateX(-28px)",
+              padding: "4px 44px",
+              borderRadius: 7,
+              background: "rgba(255,255,255,0.07)",
+              fontFamily: BODY,
+              fontWeight: 500,
+              fontSize: 14,
+              color: "rgba(255,255,255,0.55)",
+            }}
+          >
+            {WINDOW_TITLE}
+          </div>
+        </div>
+        <div style={{ position: "relative", width, height: width / STILL_ASPECT, overflow: "hidden", background: "#fff" }}>
+          {children}
         </div>
       </div>
-      <div style={{ position: "relative", width, height: width / STILL_ASPECT, overflow: "hidden", background: "#fff" }}>
-        {children}
-      </div>
-    </div>
-  </AbsoluteFill>
-);
+    </AbsoluteFill>
+  );
+};
 
 /** Zooms its children toward a focus point (0 to 1 on each axis) without leaving the frame. */
 export const Camera: FC<{ zoom: number; fx: number; fy: number; children: ReactNode }> = ({ zoom, fx, fy, children }) => {

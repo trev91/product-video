@@ -8,6 +8,9 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+// Puts ~/.product-video/bin on PATH, so every script that loads the profile finds ffmpeg.
+import "./tools.mjs";
+
 export const PROJECT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const PROFILE_PATH = path.join(PROJECT_DIR, "profile.json");
 const SCHEMA_PATH = path.join(PROJECT_DIR, "lib", "profile.schema.json");

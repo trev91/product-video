@@ -4,7 +4,7 @@ import { AbsoluteFill, spring, useCurrentFrame, useVideoConfig } from "remotion"
 import { ACCENT, ACCENT_RGB, DARK, LIGHT, PRODUCT_NAME, TAGLINE } from "../brand";
 import { Logo } from "../components/Logo";
 import { BODY } from "../fonts";
-import { Browser, Camera, Layer, Phone } from "./Devices";
+import { Browser, Camera, fitBrowser, Layer, Phone } from "./Devices";
 import { BAR, BEAT } from "./grid";
 import { ramp, track } from "./motion";
 import { Block, Caption, Eyebrow, Headline, words } from "./Type";
@@ -87,9 +87,11 @@ export const PhoneAct: FC = () => {
 export const BrowserAct: FC = () => {
   const frame = useCurrentFrame();
   const settle = ramp(frame, 0, 24);
+  // fitBrowser keeps the window inside the title-safe area at its largest scale (1).
+  const fit = fitBrowser({ width: 1200, y: -36 });
   return (
     <>
-      <Browser width={1200} y={-36 + (1 - settle) * 80} rotateX={(1 - settle) * 10} scale={0.92 + 0.08 * settle} opacity={settle}>
+      <Browser width={fit.width} x={fit.x} y={fit.y + (1 - settle) * 80} rotateX={(1 - settle) * 10} scale={0.92 + 0.08 * settle} opacity={settle}>
         <Camera zoom={track(frame, [[0, 1], [2 * BAR, 1.7]], 30)} fx={0.3} fy={0.35}>
           <Placeholder label="A page of the web app" />
         </Camera>
